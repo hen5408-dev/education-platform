@@ -717,7 +717,7 @@
       $('linkLabel').textContent = '文章連結';
       $('linkHint').textContent = '貼上雲端硬碟或其他公開連結。';
     } else {
-      $('fileInput').accept = 'video/*';
+      $('fileInput').accept = 'video/*,.mov,.mp4,.m4v,.avi,.webm,.mkv,.wmv';
       $('fileLabel').textContent = '選擇影片檔案';
       $('fileHint').innerHTML = '影片檔案較大時容易上傳失敗或很慢，建議改用「貼上網址」（例如 YouTube 不公開連結或雲端硬碟），不受檔案大小限制。';
       $('fileHint').classList.add('warn');
