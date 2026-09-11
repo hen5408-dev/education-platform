@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智平衡資源庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --ink:#233C3F; --ink-soft:#4A6266; --fog:#F2F6F5; --card:#FFFFFF; --line:#E1E9E7;
+    --teal:#2F8F86; --teal-deep:#1F6B64; --indigo:#5A6BA8;
+    --gradient: linear-gradient(135deg, var(--teal) 0%, var(--indigo) 100%);
+    --danger:#B4553F;
+  }
+  *{box-sizing:border-box;}
+  .hidden{display:none !important;}
+  body{margin:0; font-family:'Noto Sans TC', -apple-system, sans-serif; background:var(--fog); color:var(--ink); -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+
+  header{position:sticky; top:0; z-index:40; background:rgba(242,246,245,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line);}
+  .header-inner{max-width:1040px; margin:0 auto; display:flex; align-items:center; gap:14px; padding:14px 24px;}
+  .brand{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .brand-mark{width:34px; height:34px;}
+  .brand-text{font-weight:800; font-size:17px;}
+  .badge{font-size:11.5px; font-weight:700; color:var(--teal-deep); background:#EBF3F2; padding:3px 9px; border-radius:999px;}
+  .header-search{flex:1; position:relative;}
+  .header-search input{width:100%; padding:9px 14px 9px 36px; border-radius:999px; border:1px solid var(--line); background:var(--card); font-size:14px; color:var(--ink); font-family:inherit;}
+  .header-search input:focus{outline:2px solid var(--teal); outline-offset:1px;}
+  .header-search svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; stroke:var(--ink-soft);}
+  .header-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .btn-add{display:flex; align-items:center; gap:6px; background:var(--ink); color:#fff; border:none; padding:9px 16px; border-radius:999px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;}
+  .btn-add:hover{background:var(--teal-deep);}
+  .btn-ghost{display:flex; align-items:center; gap:6px; background:none; color:var(--ink-soft); border:1px solid var(--line); padding:8px 14px; border-radius:999px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;}
+  .btn-ghost:hover{border-color:var(--teal); color:var(--teal-deep);}
+  .btn-ghost svg{width:14px; height:14px;}
+
+  .dashboard{max-width:1040px; margin:0 auto; padding:24px 24px 8px; display:flex; gap:12px; flex-wrap:wrap;}
+  .dash-card{flex:1; min-width:140px; background:var(--card); border:1px solid var(--line); border-top:3px solid var(--line); border-radius:14px; padding:16px 18px; cursor:pointer; transition:border-color .15s, background .15s, color .15s;}
+  .dash-card:hover:not(.active){border-color:var(--teal);}
+  .dash-card.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .dash-card[data-cat="garment"]{background:#FBF1DE; border-top-color:#C98A1F;}
+  .dash-card[data-cat="garment"]:hover:not(.active){border-color:#C98A1F;}
+  .dash-card[data-cat="garment"].active{background:#C98A1F; border-color:#C98A1F;}
+  .dash-card[data-cat="app"]{background:#E9F1FA; border-top-color:#3D6FB4;}
+  .dash-card[data-cat="app"]:hover:not(.active){border-color:#3D6FB4;}
+  .dash-card[data-cat="app"].active{background:#3D6FB4; border-color:#3D6FB4;}
+  .dash-count{font-size:26px; font-weight:800; line-height:1;}
+  .dash-label{font-size:13px; font-weight:700; margin-top:5px;}
+  .dash-sub{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
+  .dash-card.active .dash-sub{color:rgba(255,255,255,0.75);}
+
+  main{max-width:1040px; margin:0 auto; padding:8px 24px 80px;}
+  .section{margin-bottom:36px;}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; padding-bottom:10px; margin-bottom:4px; border-bottom:2px solid var(--ink);}
+  .section[data-cat="garment"] .section-head{border-bottom-color:#C98A1F;}
+  .section[data-cat="app"] .section-head{border-bottom-color:#3D6FB4;}
+  .section-head h2{font-size:17px; margin:0; font-weight:800;}
+  .section-head span{font-size:12.5px; color:var(--ink-soft);}
+  .resource-row{display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:12px; margin-bottom:8px;}
+  .resource-row[data-cat="garment"]{background:#FBF1DE;}
+  .resource-row[data-cat="app"]{background:#E9F1FA;}
+  .res-icon{width:42px; height:42px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-soft); overflow:hidden;}
+  .res-icon svg{width:20px; height:20px;}
+  .res-icon img{width:100%; height:100%; object-fit:cover; display:block;}
+  .res-body{flex:1; min-width:0;}
+  .res-title{font-size:15px; font-weight:700; margin:0 0 3px; word-break:break-word;}
+  .res-meta{font-size:12.5px; color:var(--ink-soft); display:flex; gap:8px; flex-wrap:wrap;}
+  .res-desc{font-size:13px; color:var(--ink-soft); margin-top:4px; line-height:1.5;}
+  .tag-staff{display:inline-block; font-size:11px; font-weight:700; color:#8A5A00; background:#FBE9C9; padding:1px 7px; border-radius:999px;}
+  .res-actions{display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;}
+  .btn-icon{display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; text-decoration:none; color:var(--ink);}
+  .btn-icon:hover{border-color:var(--teal); color:var(--teal-deep);}
+  .btn-icon svg{width:13px; height:13px;}
+  .btn-del{background:none; border:none; cursor:pointer; padding:7px; color:var(--ink-soft); border-radius:8px;}
+  .btn-del:hover{color:var(--danger); background:#F6E9E6;}
+  .btn-del svg{width:16px; height:16px; display:block;}
+  .empty-state, .status-msg{text-align:center; padding:36px 20px; color:var(--ink-soft); font-size:14px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(35,60,63,0.35); z-index:60; opacity:0; pointer-events:none; transition:opacity .2s;}
+  .overlay.open{opacity:1; pointer-events:auto;}
+
+  /* 上傳/編輯側邊欄 */
+  .drawer{position:fixed; top:0; right:0; height:100%; width:min(420px, 100%); background:#fff; z-index:70; transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(0,0,0,0.12);}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{padding:20px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+  .drawer-head h3{margin:0; font-size:16px; font-weight:800;}
+  .drawer-close{background:none; border:none; cursor:pointer; padding:6px; color:var(--ink-soft);}
+  .drawer-close svg{width:18px; height:18px; display:block;}
+  .drawer-body{padding:20px 22px; overflow-y:auto; flex:1;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink);}
+  .field input[type=text], .field input[type=password], .field textarea, .field select{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--line); font-family:inherit; font-size:14px; color:var(--ink); background:var(--fog);}
+  .field textarea{resize:vertical; min-height:60px;}
+  .type-toggle{display:flex; gap:8px;}
+  .type-toggle button{flex:1; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--fog); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink-soft);}
+  .type-toggle button.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .file-drop{border:1.5px dashed var(--line); border-radius:10px; padding:18px; text-align:center; font-size:13px; color:var(--ink-soft); cursor:pointer; background:var(--fog); display:block;}
+  .file-drop.has-file{border-color:var(--teal); color:var(--teal-deep); background:#EEF6F5;}
+  .file-drop input{display:none;}
+  .hint{font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.5;}
+  .hint.warn{color:var(--danger);}
+  .or-divider{display:flex; align-items:center; gap:10px; margin:14px 0; font-size:12px; color:var(--ink-soft);}
+  .or-divider::before, .or-divider::after{content:""; flex:1; height:1px; background:var(--line);}
+  .drawer-foot{padding:16px 22px; border-top:1px solid var(--line);}
+  .btn-submit{width:100%; padding:12px; border-radius:10px; border:none; background:var(--gradient); color:#fff; font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;}
+  .btn-submit:disabled{opacity:0.5; cursor:not-allowed;}
+  .form-msg{font-size:12.5px; margin-top:10px; text-align:center;}
+  .form-msg.error{color:var(--danger);}
+  .form-msg.ok{color:var(--teal-deep);}
+
+  /* 管理登入小視窗 */
+  .login-modal{position:fixed; top:50%; left:50%; transform:translate(-50%,-48%); background:#fff; border-radius:16px; padding:30px 28px; width:min(340px, 90vw); z-index:80; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; box-shadow:0 12px 40px rgba(35,60,63,0.16);}
+  .login-modal.open{opacity:1; pointer-events:auto; transform:translate(-50%,-50%);}
+  .login-modal h3{margin:0 0 4px; font-size:16px; font-weight:800;}
+  .login-modal p{margin:0 0 16px; font-size:13px; color:var(--ink-soft);}
+  .login-modal button.btn-submit{margin-top:4px;}
+  .login-msg{font-size:12.5px; color:var(--danger); min-height:16px; margin-top:8px; text-align:center;}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:999px; font-size:13.5px; opacity:0; pointer-events:none; transition:all .25s; z-index:90;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* QR code 彈窗 */
+  .qr-modal{position:fixed; top:50%; left:50%; transform:translate(-50%,-48%); background:#fff; border-radius:16px; padding:28px; width:min(300px, 88vw); z-index:80; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; box-shadow:0 12px 40px rgba(35,60,63,0.16); text-align:center;}
+  .qr-modal.open{opacity:1; pointer-events:auto; transform:translate(-50%,-50%);}
+  .qr-modal h3{margin:0 0 4px; font-size:15.5px; font-weight:800; word-break:break-word;}
+  .qr-modal p{margin:0 0 16px; font-size:12.5px; color:var(--ink-soft);}
+  .qr-canvas-wrap{display:flex; justify-content:center; align-items:center; padding:14px; background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:14px;}
+  .qr-close{position:absolute; top:14px; right:14px; background:none; border:none; cursor:pointer; padding:6px; color:var(--ink-soft);}
+  .qr-close svg{width:18px; height:18px; display:block;}
+  .qr-hint{font-size:11.5px; color:var(--ink-soft);}
+
+  @media (max-width:600px){
+    .brand-text{display:none;}
+    .resource-row{flex-wrap:wrap;}
+    .res-actions{width:100%; justify-content:flex-end;}
+    .header-search{order:3; flex-basis:100%;}
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 100 100" fill="none">
+        <path d="M50 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24Z" stroke="#233C3F" stroke-width="6"/>
+        <path d="M50 68a12 12 0 1 1 0 24 12 12 0 0 1 0-24Z" stroke="#233C3F" stroke-width="6"/>
+        <path d="M8 50a12 12 0 1 1 24 0 12 12 0 0 1-24 0Z" stroke="#233C3F" stroke-width="6"/>
+        <path d="M68 50a12 12 0 1 1 24 0 12 12 0 0 1-24 0Z" stroke="#233C3F" stroke-width="6"/>
+        <circle cx="50" cy="50" r="12" stroke="#233C3F" stroke-width="6"/>
+        <circle cx="33" cy="33" r="11" fill="#2F8F86"/><circle cx="67" cy="33" r="11" fill="#5A6BA8"/>
+        <circle cx="33" cy="67" r="11" fill="#2F8F86"/><circle cx="67" cy="67" r="11" fill="#5A6BA8"/>
+      </svg>
+      <span class="brand-text">智平衡資源庫</span>
+      <span class="badge hidden" id="adminBadge">管理模式</span>
+    </div>
+    <div class="header-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="搜尋文章、影片…">
+    </div>
+    <div class="header-actions" id="headerActions">
+      <button class="btn-ghost" id="loginBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        管理登入
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard" id="dashboard"></div>
+
+<main id="main"><div class="status-msg">載入中…</div></main>
+
+<!-- 登入小視窗 -->
+<div class="overlay" id="loginOverlay"></div>
+<div class="login-modal" id="loginModal">
+  <h3>管理登入</h3>
+  <p>輸入管理密碼以新增、編輯或刪除資源</p>
+  <div class="field">
+    <input type="password" id="passwordInput" placeholder="密碼">
+  </div>
+  <button class="btn-submit" id="loginSubmitBtn">登入</button>
+  <div class="login-msg" id="loginMsg"></div>
+</div>
+
+<!-- 新增/編輯側邊欄 -->
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3 id="drawerTitle">新增資源</h3>
+    <button class="drawer-close" id="closeDrawerBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>類型</label>
+      <div class="type-toggle" id="typeToggle">
+        <button type="button" class="active" data-type="pdf">文章</button>
+        <button type="button" data-type="video">影片</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>分類</label>
+      <select id="catSelect">
+        <option value="garment">紅光極智衣</option>
+        <option value="app">APP</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>開放對象</label>
+      <div class="type-toggle" id="audienceToggle">
+        <button type="button" class="active" data-audience="customer">顧客</button>
+        <button type="button" data-audience="staff">同仁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>標題</label>
+      <input type="text" id="titleInput" placeholder="例：APP 藍芽配對教學">
+    </div>
+    <div class="field">
+      <label>說明（選填）</label>
+      <textarea id="descInput" placeholder="簡短說明這份資源的用途"></textarea>
+    </div>
+    <div class="field">
+      <label>來源</label>
+      <div class="type-toggle" id="sourceToggle">
+        <button type="button" class="active" data-source="file">上傳檔案</button>
+        <button type="button" data-source="link">貼上網址</button>
+      </div>
+    </div>
+    <div class="field" id="fileField">
+      <label id="fileLabel">選擇文章檔案（PDF）</label>
+      <label class="file-drop" id="fileDrop">
+        <span id="fileDropText">點一下選擇檔案</span>
+        <input type="file" id="fileInput" accept="application/pdf">
+      </label>
+      <div class="hint" id="fileHint">檔案會上傳到雲端硬碟，建議 20MB 以內。</div>
+    </div>
+    <div class="field" id="linkField">
+      <label id="linkLabel">外部連結</label>
+      <input type="text" id="linkInput" placeholder="貼上雲端硬碟 / YouTube 連結">
+      <div class="hint" id="linkHint">影片檔案較大時，建議用這個方式，不受上傳大小限制。</div>
+    </div>
+    <div class="form-msg" id="formMsg"></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-submit" id="submitBtn">加入資源庫</button>
+  </div>
+</div>
+
+<!-- QR code 彈窗 -->
+<div class="overlay" id="qrOverlay"></div>
+<div class="qr-modal" id="qrModal">
+  <button class="qr-close" id="qrCloseBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <h3 id="qrTitle"></h3>
+  <p>掃描 QR code 即可開啟</p>
+  <div class="qr-canvas-wrap" id="qrCanvasWrap"></div>
+  <div class="qr-hint">用手機相機或掃描 App 對準畫面</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  // 部署 Google Apps Script 後，把「網頁應用程式網址」（結尾是 /exec）貼在這裡；維持預設值時會自動進入示範模式（密碼 123456）
+  const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+  const CAT_LABEL = { app:'APP', garment:'紅光極智衣' };
+  const PDF_LIMIT = 20 * 1024 * 1024;
+  const VIDEO_WARN = 50 * 1024 * 1024;
+
+  const isDemo = !API_URL || API_URL.indexOf('PASTE_YOUR') === 0;
+  const DEMO_PASSWORD = "123456";
+  const STAFF_PASSWORD = "54321";
+  const DEMO_STORAGE_KEY = 'edu-platform-resources-v1';
+  const AUDIENCE_LABEL = { customer:'顧客', staff:'同仁' };
+
+  const DEMO_SEED = [
+    { id:'seed_1', cat:'app', type:'pdf', title:'APP 安裝與帳號綁定手冊', desc:'新用戶第一次使用 APP 的完整設定教學，含帳號註冊與裝置配對。', audience:'customer', createdAt:'2026-08-20T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', viewUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', size:null },
+    { id:'seed_2', cat:'app', type:'pdf', title:'APP 藍芽配對疑難排解', desc:'配對失敗、訊號中斷等常見問題的排除步驟。', audience:'customer', createdAt:'2026-08-25T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', viewUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', size:null },
+    { id:'seed_3', cat:'app', type:'video', title:'藍芽重置教學影片', desc:'裝置無法連線時，重置藍芽配對的操作示範。', audience:'customer', createdAt:'2026-09-01T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3schools.com/html/mov_bbb.mp4', viewUrl:'https://www.w3schools.com/html/mov_bbb.mp4', size:null },
+    { id:'seed_4', cat:'app', type:'video', title:'APP 操作除錯影片（內部排查用）', desc:'畫面異常、數據不同步時的排查流程，含後台檢查步驟。', audience:'staff', createdAt:'2026-09-05T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3schools.com/html/mov_bbb.mp4', viewUrl:'https://www.w3schools.com/html/mov_bbb.mp4', size:null },
+    { id:'seed_5', cat:'garment', type:'pdf', title:'第六代紅光極智衣使用手冊', desc:'穿戴方式、療程建議時間與注意事項。', audience:'customer', createdAt:'2026-08-15T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', viewUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', size:null },
+    { id:'seed_6', cat:'garment', type:'pdf', title:'紅光極智衣保養與清潔指南（內部教育訓練）', desc:'清洗頻率、避免的清潔方式與收納建議，含客訴應對重點。', audience:'staff', createdAt:'2026-08-28T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', viewUrl:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', size:null },
+    { id:'seed_7', cat:'garment', type:'video', title:'紅光極智衣穿戴示範', desc:'正確穿戴位置與鬆緊調整示範。', audience:'customer', createdAt:'2026-09-03T02:00:00.000Z', isLink:true, fileUrl:'https://www.w3schools.com/html/mov_bbb.mp4', viewUrl:'https://www.w3schools.com/html/mov_bbb.mp4', size:null }
+  ];
+
+  let role = 'guest'; // 'guest' | 'staff' | 'admin'
+  let password = '';
+  let resources = [];
+  let activeFilter = 'all';
+  let searchTerm = '';
+  let pendingFile = null;
+  let currentType = 'pdf';
+  let sourceMode = 'file';
+  let audienceMode = 'customer';
+  let editingId = null;
+
+  const $ = (id) => document.getElementById(id);
+  const main = $('main');
+
+  // ---------- 工具函式 ----------
+  function iconSvg(kind){
+    if(kind === 'pdf') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+  }
+  function fmtSize(bytes){
+    bytes = Number(bytes);
+    if(!bytes) return '';
+    if(bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+  function fmtDate(iso){
+    const d = new Date(iso);
+    if(isNaN(d)) return '';
+    return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function showToast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
+
+  // ---------- QR code ----------
+  const qrOverlay = $('qrOverlay'), qrModal = $('qrModal');
+  function openQrModal(r){
+    $('qrTitle').textContent = r.title;
+    const wrap = $('qrCanvasWrap');
+    wrap.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(wrap, { text: r.viewUrl, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    } else {
+      wrap.innerHTML = '<div class="hint">QR code 產生失敗，請確認網路連線。</div>';
+    }
+    qrOverlay.classList.add('open');
+    qrModal.classList.add('open');
+  }
+  function closeQrModal(){
+    qrOverlay.classList.remove('open');
+    qrModal.classList.remove('open');
+  }
+  qrOverlay.addEventListener('click', closeQrModal);
+  $('qrCloseBtn').addEventListener('click', closeQrModal);
+
+  // ---------- 登入 ----------
+  function updateHeaderActions(){
+    const actions = $('headerActions');
+    $('adminBadge').classList.toggle('hidden', role === 'guest');
+    $('adminBadge').textContent = role === 'admin' ? '管理模式' : (role === 'staff' ? '同仁模式' : '');
+
+    if(role === 'admin'){
+      actions.innerHTML = `
+        <button class="btn-add" id="openDrawerBtn">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          新增資源
+        </button>
+        <button class="btn-ghost" id="logoutBtn">登出</button>
+      `;
+      $('openDrawerBtn').addEventListener('click', () => { editingId = null; $('drawerTitle').textContent = '新增資源'; openDrawer(); });
+      $('logoutBtn').addEventListener('click', doLogout);
+    } else if(role === 'staff'){
+      actions.innerHTML = `<button class="btn-ghost" id="logoutBtn">登出</button>`;
+      $('logoutBtn').addEventListener('click', doLogout);
+    } else {
+      actions.innerHTML = `
+        <button class="btn-ghost" id="loginBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          登入
+        </button>
+      `;
+      $('loginBtn').addEventListener('click', openLoginModal);
+    }
+  }
+
+  function doLogout(){
+    const wasRole = role;
+    role = 'guest'; password = '';
+    updateHeaderActions(); render();
+    showToast(wasRole === 'admin' ? '已登出管理模式' : '已登出同仁模式');
+  }
+
+  const loginOverlay = $('loginOverlay'), loginModal = $('loginModal');
+  function openLoginModal(){
+    loginOverlay.classList.add('open');
+    loginModal.classList.add('open');
+    $('passwordInput').value = '';
+    $('loginMsg').textContent = '';
+    $('passwordInput').focus();
+  }
+  function closeLoginModal(){
+    loginOverlay.classList.remove('open');
+    loginModal.classList.remove('open');
+  }
+  loginOverlay.addEventListener('click', closeLoginModal);
+  $('loginSubmitBtn').addEventListener('click', tryLogin);
+  $('passwordInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') tryLogin(); });
+
+  function enterRole(pw, newRole){
+    password = pw; role = newRole;
+    closeLoginModal(); updateHeaderActions(); render();
+    showToast(newRole === 'admin' ? '已進入管理模式' : '已登入，可以看到同仁專屬內容了');
+  }
+
+  async function tryLogin(){
+    const pw = $('passwordInput').value;
+    if(!pw){ $('loginMsg').textContent = '請輸入密碼'; return; }
+
+    if(isDemo){
+      if(pw === DEMO_PASSWORD) enterRole(pw, 'admin');
+      else if(pw === STAFF_PASSWORD) enterRole(pw, 'staff');
+      else $('loginMsg').textContent = '密碼錯誤，請再試一次。';
+      return;
+    }
+
+    $('loginSubmitBtn').disabled = true;
+    $('loginSubmitBtn').textContent = '確認中…';
+    try{
+      const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'checkPassword', password: pw }) });
+      const data = await res.json();
+      // 後端回傳 { ok:true, role:'admin' } 或 { ok:true, role:'staff' }
+      if(data.ok && (data.role === 'admin' || data.role === 'staff')) enterRole(pw, data.role);
+      else $('loginMsg').textContent = '密碼錯誤，請再試一次。';
+    }catch(err){
+      $('loginMsg').textContent = '無法連線到後端，請確認網路或 API 網址。';
+    }
+    $('loginSubmitBtn').disabled = false;
+    $('loginSubmitBtn').textContent = '登入';
+  }
+
+  // ---------- 讀取 / 渲染 ----------
+  async function load(){
+    main.innerHTML = '<div class="status-msg">載入中…</div>';
+    if(isDemo){
+      try{
+        const result = await window.storage.get(DEMO_STORAGE_KEY, true);
+        resources = result ? JSON.parse(result.value) : [];
+        if(resources.length === 0){
+          resources = DEMO_SEED.slice();
+          await persistDemo();
+        }
+      }catch(err){
+        resources = DEMO_SEED.slice();
+      }
+      render();
+      return;
+    }
+    try{
+      const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'list' }) });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || '讀取失敗');
+      resources = data.items || [];
+      render();
+    }catch(err){
+      main.innerHTML = '<div class="status-msg">目前無法載入資源，請稍後再試一次。</div>';
+    }
+  }
+
+  async function persistDemo(){
+    try{
+      await window.storage.set(DEMO_STORAGE_KEY, JSON.stringify(resources), true);
+    }catch(err){
+      showToast('儲存失敗，請確認網路連線');
+    }
+  }
+
+  function visibleResources(){
+    return role === 'guest' ? resources.filter(r => r.audience !== 'staff') : resources;
+  }
+
+  function countFor(cat){
+    const pool = visibleResources();
+    const items = cat === 'all' ? pool : pool.filter(r => r.cat === cat);
+    return { total: items.length, pdf: items.filter(r=>r.type==='pdf').length, video: items.filter(r=>r.type==='video').length };
+  }
+
+  function renderDashboard(){
+    const dash = $('dashboard');
+    const defs = [{key:'all', label:'全部'}, {key:'garment', label:CAT_LABEL.garment}, {key:'app', label:CAT_LABEL.app}];
+    dash.innerHTML = defs.map(d => {
+      const c = countFor(d.key);
+      const active = activeFilter === d.key ? ' active' : '';
+      return `<div class="dash-card${active}" data-cat="${d.key}">
+        <div class="dash-count">${c.total}</div>
+        <div class="dash-label">${d.label}</div>
+        <div class="dash-sub">${c.pdf} 篇文章 · ${c.video} 部影片</div>
+      </div>`;
+    }).join('');
+  }
+
+  function render(){
+    renderDashboard();
+    main.innerHTML = '';
+    const cats = activeFilter === 'all' ? ['garment','app'] : [activeFilter];
+    let anyRendered = false;
+    const pool = visibleResources();
+
+    cats.forEach(cat => {
+      let items = pool.filter(r => r.cat === cat);
+      if(searchTerm) items = items.filter(r => (r.title+r.desc).toLowerCase().includes(searchTerm));
+      if(items.length === 0) return;
+      anyRendered = true;
+      const section = document.createElement('div');
+      section.className = 'section';
+      section.dataset.cat = cat;
+      section.innerHTML = `<div class="section-head"><h2>${CAT_LABEL[cat]}</h2><span>${items.length} 份</span></div>`;
+      const list = document.createElement('div');
+      items.sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+      items.forEach(r => list.appendChild(renderRow(r)));
+      section.appendChild(list);
+      main.appendChild(section);
+    });
+
+    if(!anyRendered){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = pool.length === 0 ? '目前還沒有資源上架。' : '找不到符合條件的資源，換個關鍵字或分類試試。';
+      main.appendChild(empty);
+    }
+  }
+
+  function renderRow(r){
+    const row = document.createElement('div');
+    row.className = 'resource-row';
+    row.dataset.cat = r.cat;
+    const isVideo = r.type === 'video';
+    row.innerHTML = `
+      <div class="res-icon" id="thumb-${r.id}">${iconSvg(isVideo?'video':'pdf')}</div>
+      <div class="res-body">
+        <p class="res-title">${escapeHtml(r.title)}</p>
+        <div class="res-meta">
+          <span>${fmtDate(r.createdAt)}</span>
+          ${r.size ? `<span>· ${fmtSize(r.size)}</span>` : ''}
+          ${r.audience === 'staff' ? '<span class="tag-staff">同仁限定</span>' : ''}
+        </div>
+        ${r.desc ? `<div class="res-desc">${escapeHtml(r.desc)}</div>` : ''}
+      </div>
+      <div class="res-actions">
+        <a class="btn-icon" href="${r.viewUrl}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14L21 3M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>
+          ${isVideo ? '觀看' : '預覽'}
+        </a>
+        <a class="btn-icon" href="${r.fileUrl}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          下載
+        </a>
+        <button class="btn-icon" data-qr="${r.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM14 21h7v-4M21 14v.01M17 21v.01"/></svg>
+          QR code
+        </button>
+        ${role === 'admin' ? `
+        <button class="btn-icon" data-edit="${r.id}">編輯</button>
+        <button class="btn-del" data-id="${r.id}" title="刪除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>` : ''}
+      </div>
+    `;
+    if(role === 'admin'){
+      row.querySelector('.btn-del').addEventListener('click', () => removeResource(r.id));
+      row.querySelector('[data-edit]').addEventListener('click', () => openEdit(r));
+    }
+    row.querySelector('[data-qr]').addEventListener('click', () => openQrModal(r));
+    if(isVideo){
+      const iconEl = row.querySelector('#thumb-' + r.id);
+      applyThumb(r, iconEl);
+    }
+    return row;
+  }
+
+  const thumbCache = {};
+  function getVideoThumbnail(url){
+    return new Promise((resolve) => {
+      try{
+        const v = document.createElement('video');
+        v.crossOrigin = 'anonymous';
+        v.muted = true;
+        v.playsInline = true;
+        v.preload = 'metadata';
+        let done = false;
+        const finish = (val) => { if(!done){ done = true; resolve(val); } };
+        v.addEventListener('loadeddata', () => {
+          try{ v.currentTime = Math.min(1, (v.duration || 2) / 2); }
+          catch(e){ finish(null); }
+        });
+        v.addEventListener('seeked', () => {
+          try{
+            const canvas = document.createElement('canvas');
+            canvas.width = v.videoWidth || 160;
+            canvas.height = v.videoHeight || 90;
+            canvas.getContext('2d').drawImage(v, 0, 0, canvas.width, canvas.height);
+            finish(canvas.toDataURL('image/jpeg', 0.7));
+          }catch(e){ finish(null); } // 跨網域影片常會擋 canvas 讀取，這裡就放棄改用圖示
+        });
+        v.addEventListener('error', () => finish(null));
+        setTimeout(() => finish(null), 4000);
+        v.src = url;
+      }catch(e){ resolve(null); }
+    });
+  }
+
+  function applyThumb(r, iconEl){
+    if(!iconEl) return;
+    if(thumbCache[r.id] !== undefined){
+      if(thumbCache[r.id]) iconEl.innerHTML = `<img src="${thumbCache[r.id]}" alt="">`;
+      return;
+    }
+    getVideoThumbnail(r.fileUrl).then(dataUrl => {
+      thumbCache[r.id] = dataUrl;
+      if(dataUrl){
+        const el = document.getElementById('thumb-' + r.id);
+        if(el) el.innerHTML = `<img src="${dataUrl}" alt="">`;
+      }
+    });
+  }
+
+  $('dashboard').addEventListener('click', (e) => {
+    const card = e.target.closest('.dash-card');
+    if(!card) return;
+    activeFilter = card.dataset.cat;
+    render();
+  });
+  $('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value.trim().toLowerCase(); render(); });
+
+  // ---------- 刪除 ----------
+  async function removeResource(id){
+    if(!confirm('確定要刪除這筆資源嗎？此動作無法復原。')) return;
+
+    if(isDemo){
+      resources = resources.filter(r => r.id !== id);
+      render();
+      await persistDemo();
+      showToast('已刪除');
+      return;
+    }
+
+    try{
+      const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'delete', password, id }) });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || '刪除失敗');
+      showToast('已刪除');
+      load();
+    }catch(err){
+      showToast('刪除失敗：' + err.message);
+    }
+  }
+
+  // ---------- 新增／編輯抽屜 ----------
+  const drawer = $('drawer'), overlay = $('overlay');
+  function openDrawer(){ drawer.classList.add('open'); overlay.classList.add('open'); }
+  function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); resetForm(); }
+  $('closeDrawerBtn').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  function openEdit(r){
+    editingId = r.id;
+    $('drawerTitle').textContent = '編輯資源';
+    $('titleInput').value = r.title;
+    $('descInput').value = r.desc || '';
+    $('catSelect').value = r.cat;
+    currentType = r.type;
+    document.querySelectorAll('#typeToggle button').forEach(b => b.classList.toggle('active', b.dataset.type === currentType));
+    sourceMode = r.isLink ? 'link' : 'file';
+    document.querySelectorAll('#sourceToggle button').forEach(b => b.classList.toggle('active', b.dataset.source === sourceMode));
+    audienceMode = r.audience === 'staff' ? 'staff' : 'customer';
+    document.querySelectorAll('#audienceToggle button').forEach(b => b.classList.toggle('active', b.dataset.audience === audienceMode));
+    updateTypeUI();
+    updateSourceUI();
+    if(r.isLink) $('linkInput').value = r.fileUrl;
+    openDrawer();
+  }
+
+  document.querySelectorAll('#typeToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#typeToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.type;
+      updateTypeUI();
+    });
+  });
+
+  document.querySelectorAll('#sourceToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#sourceToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      sourceMode = btn.dataset.source;
+      updateSourceUI();
+    });
+  });
+
+  document.querySelectorAll('#audienceToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#audienceToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      audienceMode = btn.dataset.audience;
+    });
+  });
+
+  function updateSourceUI(){
+    $('fileField').classList.toggle('hidden', sourceMode !== 'file');
+    $('linkField').classList.toggle('hidden', sourceMode !== 'link');
+    if(sourceMode === 'link'){
+      pendingFile = null;
+      $('fileInput').value = '';
+      $('fileDrop').classList.remove('has-file');
+      $('fileDropText').textContent = '點一下選擇檔案';
+    }
+    showFormMsg('', false);
+  }
+
+  function updateTypeUI(){
+    if(currentType === 'pdf'){
+      $('fileInput').accept = 'application/pdf';
+      $('fileLabel').textContent = '選擇文章檔案（PDF）';
+      $('fileHint').textContent = '檔案會上傳到雲端硬碟，建議 20MB 以內，太大請改用網址。';
+      $('fileHint').classList.remove('warn');
+      $('linkLabel').textContent = '文章連結';
+      $('linkHint').textContent = '貼上雲端硬碟或其他公開連結。';
+    } else {
+      $('fileInput').accept = 'video/*';
+      $('fileLabel').textContent = '選擇影片檔案';
+      $('fileHint').innerHTML = '影片檔案較大時容易上傳失敗或很慢，建議改用「貼上網址」（例如 YouTube 不公開連結或雲端硬碟），不受檔案大小限制。';
+      $('fileHint').classList.add('warn');
+      $('linkLabel').textContent = '影片連結';
+      $('linkHint').textContent = '建議：YouTube 不公開連結或雲端硬碟連結，不限制檔案大小。';
+    }
+  }
+
+  $('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+
+    if(currentType === 'pdf' && file.size > PDF_LIMIT){
+      showFormMsg(`檔案太大了（${fmtSize(file.size)}），上限是 ${fmtSize(PDF_LIMIT)}。請改用「貼上網址」。`, true);
+      $('fileInput').value = ''; pendingFile = null; $('fileDrop').classList.remove('has-file');
+      return;
+    }
+    if(currentType === 'video' && file.size > VIDEO_WARN){
+      showFormMsg(`這個檔案有 ${fmtSize(file.size)}，上傳可能會很慢或失敗，建議改用「貼上網址」會更穩定。若仍要繼續上傳，選好檔案後直接送出即可。`, false);
+    } else {
+      showFormMsg('', false);
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      pendingFile = { name: file.name, size: file.size, mimeType: file.type, base64 };
+      $('fileDropText').textContent = `${file.name}（${fmtSize(file.size)}）`;
+      $('fileDrop').classList.add('has-file');
+    };
+    reader.onerror = () => showFormMsg('讀取檔案失敗，請再試一次。', true);
+    reader.readAsDataURL(file);
+  });
+
+  function showFormMsg(msg, isError){
+    const el = $('formMsg');
+    el.textContent = msg;
+    el.className = 'form-msg' + (msg ? (isError ? ' error' : ' ok') : '');
+  }
+
+  function resetForm(){
+    $('titleInput').value = ''; $('descInput').value = ''; $('linkInput').value = '';
+    $('fileInput').value = ''; pendingFile = null; editingId = null;
+    $('fileDrop').classList.remove('has-file'); $('fileDropText').textContent = '點一下選擇檔案';
+    showFormMsg('', false);
+    document.querySelectorAll('#typeToggle button').forEach(b=>b.classList.remove('active'));
+    document.querySelector('#typeToggle button[data-type="pdf"]').classList.add('active');
+    document.querySelectorAll('#sourceToggle button').forEach(b=>b.classList.remove('active'));
+    document.querySelector('#sourceToggle button[data-source="file"]').classList.add('active');
+    document.querySelectorAll('#audienceToggle button').forEach(b=>b.classList.remove('active'));
+    document.querySelector('#audienceToggle button[data-audience="customer"]').classList.add('active');
+    currentType = 'pdf'; sourceMode = 'file'; audienceMode = 'customer'; $('catSelect').value = 'garment';
+    updateTypeUI();
+    updateSourceUI();
+  }
+
+  $('submitBtn').addEventListener('click', async () => {
+    const title = $('titleInput').value.trim();
+    const desc = $('descInput').value.trim();
+    const link = $('linkInput').value.trim();
+    const cat = $('catSelect').value;
+
+    if(!title){ showFormMsg('請輸入標題。', true); return; }
+    if(sourceMode === 'file' && !pendingFile && !editingId){ showFormMsg('請選擇要上傳的檔案。', true); return; }
+    if(sourceMode === 'link' && !link){ showFormMsg('請貼上網址。', true); return; }
+
+    const payload = { password, cat, type: currentType, title, desc, audience: audienceMode };
+    if(sourceMode === 'file' && pendingFile){
+      payload.fileName = pendingFile.name;
+      payload.mimeType = pendingFile.mimeType;
+      payload.fileBase64 = pendingFile.base64;
+    } else if(sourceMode === 'link' && link){
+      payload.link = link;
+    }
+
+    $('submitBtn').disabled = true;
+    $('submitBtn').textContent = '儲存中…';
+
+    if(isDemo){
+      try{
+        if(editingId){
+          const r = resources.find(x => x.id === editingId);
+          if(r){
+            r.title = title; r.desc = desc; r.cat = cat; r.audience = audienceMode;
+            if(payload.fileBase64){
+              const url = 'data:' + payload.mimeType + ';base64,' + payload.fileBase64;
+              r.isLink = false; r.fileUrl = url; r.viewUrl = url; r.size = Math.round(payload.fileBase64.length * 0.75);
+            } else if(payload.link){
+              r.isLink = true; r.fileUrl = payload.link; r.viewUrl = payload.link; r.size = null;
+            }
+          }
+        } else {
+          const id = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+          const isLink = !payload.fileBase64;
+          const url = isLink ? payload.link : ('data:' + payload.mimeType + ';base64,' + payload.fileBase64);
+          resources.push({
+            id, cat, type: currentType, title, desc, audience: audienceMode,
+            createdAt: new Date().toISOString(),
+            isLink, fileUrl: url, viewUrl: url,
+            size: isLink ? null : Math.round(payload.fileBase64.length * 0.75)
+          });
+        }
+        await persistDemo();
+        closeDrawer();
+        showToast(editingId ? '已更新資源' : '已加入資源庫');
+        render();
+      }catch(err){
+        showFormMsg('儲存失敗：' + err.message, true);
+      }
+      $('submitBtn').disabled = false;
+      $('submitBtn').textContent = '加入資源庫';
+      return;
+    }
+
+    try{
+      payload.action = editingId ? 'edit' : 'add';
+      if(editingId) payload.id = editingId;
+      const res = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || '儲存失敗');
+      closeDrawer();
+      showToast(editingId ? '已更新資源' : '已加入資源庫');
+      load();
+    }catch(err){
+      showFormMsg('儲存失敗：' + err.message, true);
+    }
+    $('submitBtn').disabled = false;
+    $('submitBtn').textContent = '加入資源庫';
+  });
+
+  updateHeaderActions();
+  updateTypeUI();
+  updateSourceUI();
+  load();
+})();
+</script>
+</body>
+</html>
