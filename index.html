@@ -226,6 +226,15 @@
       <textarea id="descInput" placeholder="簡短說明這份資源的用途"></textarea>
     </div>
     <div class="field">
+      <label>封面圖（選填）</label>
+      <label class="file-drop" id="coverDrop">
+        <span id="coverDropText">點一下選擇圖片</span>
+        <input type="file" id="coverInput" accept="image/*">
+      </label>
+      <div class="hint">建議接近正方形，檔案 3MB 以內；不選則顯示預設圖示。</div>
+      <img id="coverPreview" style="display:none; width:96px; height:96px; object-fit:cover; border-radius:10px; margin-top:10px;">
+    </div>
+    <div class="field">
       <label>來源</label>
       <div class="type-toggle" id="sourceToggle">
         <button type="button" class="active" data-source="file">上傳檔案</button>
@@ -296,6 +305,7 @@
   let activeFilter = 'all';
   let searchTerm = '';
   let pendingFile = null;
+  let pendingCover = null;
   let currentType = 'pdf';
   let sourceMode = 'file';
   let audienceMode = 'customer';
@@ -526,18 +536,19 @@
     row.dataset.cat = r.cat;
     const isVideo = r.type === 'video';
     row.innerHTML = `
-      <div class="res-icon" id="thumb-${r.id}">${iconSvg(isVideo?'video':'pdf')}</div>
+      <div class="res-icon" id="thumb-${r.id}">${r.coverUrl ? `<img src="${r.coverUrl}" alt="">` : iconSvg(isVideo?'video':'pdf')}</div>
       <div class="res-body">
         <p class="res-title">${escapeHtml(r.title)}</p>
         <div class="res-meta">
           <span>${fmtDate(r.createdAt)}</span>
           ${r.size ? `<span>· ${fmtSize(r.size)}</span>` : ''}
           ${r.audience === 'staff' ? '<span class="tag-staff">同仁限定</span>' : ''}
+          ${role === 'admin' ? `<span>· 👁 ${r.views || 0} 次瀏覽</span>` : ''}
         </div>
         ${r.desc ? `<div class="res-desc">${escapeHtml(r.desc)}</div>` : ''}
       </div>
       <div class="res-actions">
-        <a class="btn-icon" href="${r.viewUrl}" target="_blank" rel="noopener">
+        <a class="btn-icon" href="${r.viewUrl}" target="_blank" rel="noopener" data-view="${r.id}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14L21 3M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>
           ${isVideo ? '觀看' : '預覽'}
         </a>
@@ -561,11 +572,29 @@
       row.querySelector('[data-edit]').addEventListener('click', () => openEdit(r));
     }
     row.querySelector('[data-qr]').addEventListener('click', () => openQrModal(r));
-    if(isVideo){
+    row.querySelector('[data-view]').addEventListener('click', () => trackView(r.id));
+    if(isVideo && !r.coverUrl){
       const iconEl = row.querySelector('#thumb-' + r.id);
       applyThumb(r, iconEl);
     }
     return row;
+  }
+
+  // ---------- 瀏覽次數追蹤 ----------
+  function trackView(id){
+    if(isDemo){
+      const r = resources.find(x => x.id === id);
+      if(r){ r.views = (r.views || 0) + 1; persistDemo(); }
+      return;
+    }
+    try{
+      const body = JSON.stringify({ action:'incrementView', id });
+      if(navigator.sendBeacon){
+        navigator.sendBeacon(API_URL, new Blob([body], { type:'text/plain' }));
+      } else {
+        fetch(API_URL, { method:'POST', body, keepalive:true });
+      }
+    }catch(e){}
   }
 
   const thumbCache = {};
@@ -667,6 +696,11 @@
     updateTypeUI();
     updateSourceUI();
     if(r.isLink) $('linkInput').value = r.fileUrl;
+    if(r.coverUrl){
+      $('coverPreview').src = r.coverUrl;
+      $('coverPreview').style.display = 'block';
+      $('coverDropText').textContent = '已有封面圖（重新選擇可替換）';
+    }
     openDrawer();
   }
 
@@ -752,6 +786,28 @@
     reader.readAsDataURL(file);
   });
 
+  const COVER_LIMIT = 3 * 1024 * 1024; // 3MB
+  $('coverInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > COVER_LIMIT){
+      showFormMsg(`封面圖太大了（${fmtSize(file.size)}），上限是 ${fmtSize(COVER_LIMIT)}。`, true);
+      $('coverInput').value = ''; pendingCover = null;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      pendingCover = { name: file.name, mimeType: file.type, base64, dataUrl: reader.result };
+      $('coverDropText').textContent = `${file.name}（${fmtSize(file.size)}）`;
+      $('coverDrop').classList.add('has-file');
+      $('coverPreview').src = reader.result;
+      $('coverPreview').style.display = 'block';
+    };
+    reader.onerror = () => showFormMsg('讀取封面圖失敗，請再試一次。', true);
+    reader.readAsDataURL(file);
+  });
+
   function showFormMsg(msg, isError){
     const el = $('formMsg');
     el.textContent = msg;
@@ -762,6 +818,9 @@
     $('titleInput').value = ''; $('descInput').value = ''; $('linkInput').value = '';
     $('fileInput').value = ''; pendingFile = null; editingId = null;
     $('fileDrop').classList.remove('has-file'); $('fileDropText').textContent = '點一下選擇檔案';
+    $('coverInput').value = ''; pendingCover = null;
+    $('coverDrop').classList.remove('has-file'); $('coverDropText').textContent = '點一下選擇圖片';
+    $('coverPreview').style.display = 'none'; $('coverPreview').src = '';
     showFormMsg('', false);
     document.querySelectorAll('#typeToggle button').forEach(b=>b.classList.remove('active'));
     document.querySelector('#typeToggle button[data-type="pdf"]').classList.add('active');
@@ -792,6 +851,11 @@
     } else if(sourceMode === 'link' && link){
       payload.link = link;
     }
+    if(pendingCover){
+      payload.coverFileName = pendingCover.name;
+      payload.coverMimeType = pendingCover.mimeType;
+      payload.coverBase64 = pendingCover.base64;
+    }
 
     $('submitBtn').disabled = true;
     $('submitBtn').textContent = '儲存中…';
@@ -808,6 +872,7 @@
             } else if(payload.link){
               r.isLink = true; r.fileUrl = payload.link; r.viewUrl = payload.link; r.size = null;
             }
+            if(pendingCover) r.coverUrl = pendingCover.dataUrl;
           }
         } else {
           const id = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
@@ -817,7 +882,9 @@
             id, cat, type: currentType, title, desc, audience: audienceMode,
             createdAt: new Date().toISOString(),
             isLink, fileUrl: url, viewUrl: url,
-            size: isLink ? null : Math.round(payload.fileBase64.length * 0.75)
+            size: isLink ? null : Math.round(payload.fileBase64.length * 0.75),
+            coverUrl: pendingCover ? pendingCover.dataUrl : null,
+            views: 0
           });
         }
         await persistDemo();
