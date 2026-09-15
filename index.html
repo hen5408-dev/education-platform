@@ -62,14 +62,32 @@
   .resource-row[data-cat="garment"]{background:#FBF1DE;}
   .resource-row[data-cat="app"]{background:#E9F1FA;}
 
+  /* 兩欄並排列表 */
+  .resource-list{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .resource-list .resource-row{margin-bottom:0;}
+  @media (max-width:480px){
+    .resource-list{gap:8px;}
+  }
+
   /* 有封面圖的資源：改成放大版卡片，圖片在上、內容在下，適合手機閱讀 */
   .resource-row.has-cover{display:block; padding:0; overflow:hidden;}
-  .res-cover-wrap{position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; background:rgba(0,0,0,0.04);}
+  .res-cover-wrap{position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; background:rgba(0,0,0,0.04); cursor:pointer;}
   .res-cover-img{width:100%; height:100%; object-fit:cover; display:block;}
+  .res-cover-wrap::after{content:''; position:absolute; inset:0; background:rgba(0,0,0,0); transition:background .15s;}
+  .res-cover-wrap:hover::after{background:rgba(0,0,0,0.06);}
+  .res-cover-play{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.18); pointer-events:none;}
+  .res-cover-play svg{width:16px; height:16px; color:var(--ink);}
   .res-cover-badge{position:absolute; top:10px; right:10px;}
-  .res-card-content{padding:14px 16px 16px;}
-  .res-card-content .res-actions{margin-top:12px; justify-content:flex-start; width:100%;}
-  .res-icon{width:42px; height:42px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-soft); overflow:hidden;}
+  .res-card-content{padding:12px 14px 14px;}
+  .res-card-content .res-title{font-size:14px;}
+  .res-card-content .res-actions{margin-top:10px; justify-content:flex-start; width:100%;}
+  @media (max-width:600px){
+    .res-card-content{padding:10px 12px 12px;}
+    .res-card-content .res-title{font-size:13.5px;}
+    .res-card-content .res-desc{font-size:12px;}
+    .res-card-content .btn-icon{padding:6px 9px; font-size:11.5px;}
+  }
+  .res-icon{width:42px; height:42px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-soft); overflow:hidden; cursor:pointer;}
   .res-icon svg{width:20px; height:20px;}
   .res-icon img{width:100%; height:100%; object-fit:cover; display:block;}
   .res-body{flex:1; min-width:0;}
@@ -129,24 +147,6 @@
   .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:999px; font-size:13.5px; opacity:0; pointer-events:none; transition:all .25s; z-index:90;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  /* 並排預覽面板 */
-  .compare-panel{max-width:1100px; margin:0 auto 18px; padding:0 20px;}
-  .compare-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
-  .compare-header strong{font-size:14.5px;}
-  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-  .compare-slot{border:1px solid var(--line); border-radius:12px; overflow:hidden; min-height:360px; display:flex; flex-direction:column; background:var(--card);}
-  .compare-slot-empty{flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; padding:24px; text-align:center; background:var(--fog);}
-  .compare-slot-title{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; font-size:13px; font-weight:700; background:var(--fog); border-bottom:1px solid var(--line);}
-  .compare-slot-title span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .compare-slot-title button{background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:16px; line-height:1; padding:2px 4px; flex-shrink:0;}
-  .compare-slot-title button:hover{color:var(--ink);}
-  .compare-slot iframe{flex:1; width:100%; border:none; min-height:320px; display:block;}
-  @media (max-width:720px){
-    .compare-grid{grid-template-columns:1fr;}
-    .compare-slot{min-height:280px;}
-    .compare-slot iframe{min-height:260px;}
-  }
-
   /* QR code 彈窗 */
   .qr-modal{position:fixed; top:50%; left:50%; transform:translate(-50%,-48%); background:#fff; border-radius:16px; padding:28px; width:min(300px, 88vw); z-index:80; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; box-shadow:0 12px 40px rgba(35,60,63,0.16); text-align:center;}
   .qr-modal.open{opacity:1; pointer-events:auto; transform:translate(-50%,-50%);}
@@ -160,7 +160,8 @@
   @media (max-width:600px){
     .brand-text{display:none;}
     .resource-row{flex-wrap:wrap;}
-    .res-actions{width:100%; justify-content:flex-end;}
+    .resource-row:not(.has-cover){flex-direction:column; align-items:flex-start;}
+    .res-actions{width:100%; justify-content:flex-start;}
     .header-search{order:3; flex-basis:100%;}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
@@ -197,18 +198,6 @@
 </header>
 
 <div class="dashboard" id="dashboard"></div>
-
-<!-- 並排預覽面板 -->
-<div class="compare-panel" id="comparePanel" style="display:none;">
-  <div class="compare-header">
-    <strong>並排預覽</strong>
-    <button class="btn-icon" id="closeCompareBtn">關閉並排預覽</button>
-  </div>
-  <div class="compare-grid">
-    <div class="compare-slot" id="compareSlot0"><div class="compare-slot-empty">點資源旁的「並排預覽」把它加進來</div></div>
-    <div class="compare-slot" id="compareSlot1"><div class="compare-slot-empty">點資源旁的「並排預覽」把它加進來</div></div>
-  </div>
-</div>
 
 <main id="main"><div class="status-msg">載入中…</div></main>
 
@@ -370,55 +359,6 @@
   }
   function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
   function showToast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
-
-  // ---------- 並排預覽 ----------
-  let compareSlots = [null, null];
-
-  function toEmbedUrl(r){
-    const url = r.viewUrl || '';
-    const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)\//);
-    if(driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
-    if(ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    return url;
-  }
-
-  function renderCompareSlot(idx){
-    const slotEl = $('compareSlot' + idx);
-    const r = compareSlots[idx];
-    if(!r){
-      slotEl.innerHTML = `<div class="compare-slot-empty">點資源旁的「並排預覽」把它加進來</div>`;
-      return;
-    }
-    slotEl.innerHTML = `
-      <div class="compare-slot-title">
-        <span>${escapeHtml(r.title)}</span>
-        <button data-close="${idx}" title="移除">✕</button>
-      </div>
-      <iframe src="${toEmbedUrl(r)}" allow="autoplay; fullscreen" allowfullscreen></iframe>
-    `;
-    slotEl.querySelector('[data-close]').addEventListener('click', () => {
-      compareSlots[idx] = null;
-      renderCompareSlot(idx);
-      if(compareSlots.every(s => !s)) $('comparePanel').style.display = 'none';
-    });
-  }
-
-  function addToCompare(r){
-    let idx = compareSlots.findIndex(s => !s);
-    if(idx === -1) idx = 0; // 兩格都滿了就換掉左邊那格
-    compareSlots[idx] = r;
-    renderCompareSlot(idx);
-    $('comparePanel').style.display = 'block';
-    trackView(r.id);
-    $('comparePanel').scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-
-  $('closeCompareBtn').addEventListener('click', () => {
-    compareSlots = [null, null];
-    renderCompareSlot(0); renderCompareSlot(1);
-    $('comparePanel').style.display = 'none';
-  });
 
   // ---------- QR code ----------
   const qrOverlay = $('qrOverlay'), qrModal = $('qrModal');
@@ -603,6 +543,7 @@
       section.dataset.cat = cat;
       section.innerHTML = `<div class="section-head"><h2>${CAT_LABEL[cat]}</h2><span>${items.length} 份</span></div>`;
       const list = document.createElement('div');
+      list.className = 'resource-list';
       items.sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
       items.forEach(r => list.appendChild(renderRow(r)));
       section.appendChild(list);
@@ -631,10 +572,6 @@
       ${role === 'admin' ? `<span>· 👁 ${r.views || 0} 次瀏覽</span>` : ''}
     `;
     const actionsHtml = `
-      <a class="btn-icon" href="${r.viewUrl}" target="_blank" rel="noopener" data-view="${r.id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14L21 3M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>
-        ${isVideo ? '觀看' : '預覽'}
-      </a>
       <a class="btn-icon" href="${r.fileUrl}" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         下載
@@ -642,10 +579,6 @@
       <button class="btn-icon" data-qr="${r.id}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM14 21h7v-4M21 14v.01M17 21v.01"/></svg>
         QR code
-      </button>
-      <button class="btn-icon" data-compare="${r.id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg>
-        並排預覽
       </button>
       ${role === 'admin' ? `
       <button class="btn-icon" data-edit="${r.id}">編輯</button>
@@ -656,8 +589,11 @@
 
     if(hasCover){
       row.innerHTML = `
-        <div class="res-cover-wrap">
+        <div class="res-cover-wrap" data-preview="${r.id}">
           <img class="res-cover-img" src="${r.coverUrl}" alt="">
+          ${isVideo ? `<span class="res-cover-play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </span>` : ''}
           ${r.audience === 'staff' ? '<span class="tag-staff res-cover-badge">同仁限定</span>' : ''}
         </div>
         <div class="res-card-content">
@@ -669,7 +605,7 @@
       `;
     } else {
       row.innerHTML = `
-        <div class="res-icon" id="thumb-${r.id}">${iconSvg(isVideo?'video':'pdf')}</div>
+        <div class="res-icon" id="thumb-${r.id}" data-preview="${r.id}">${iconSvg(isVideo?'video':'pdf')}</div>
         <div class="res-body">
           <p class="res-title">${escapeHtml(r.title)}</p>
           <div class="res-meta">${metaHtml}</div>
@@ -684,8 +620,10 @@
       row.querySelector('[data-edit]').addEventListener('click', () => openEdit(r));
     }
     row.querySelector('[data-qr]').addEventListener('click', () => openQrModal(r));
-    row.querySelector('[data-compare]').addEventListener('click', () => addToCompare(r));
-    row.querySelector('[data-view]').addEventListener('click', () => trackView(r.id));
+    row.querySelector('[data-preview]').addEventListener('click', () => {
+      trackView(r.id);
+      window.open(r.viewUrl, '_blank', 'noopener');
+    });
     if(isVideo && !hasCover){
       const iconEl = row.querySelector('#thumb-' + r.id);
       applyThumb(r, iconEl);
