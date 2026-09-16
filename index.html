@@ -46,6 +46,9 @@
   .dash-card[data-cat="app"]{background:#E9F1FA; border-top-color:#3D6FB4;}
   .dash-card[data-cat="app"]:hover:not(.active){border-color:#3D6FB4;}
   .dash-card[data-cat="app"].active{background:#3D6FB4; border-color:#3D6FB4;}
+  .dash-card[data-cat="huyounwen"]{background:#F0EBFA; border-top-color:#7C5CBF;}
+  .dash-card[data-cat="huyounwen"]:hover:not(.active){border-color:#7C5CBF;}
+  .dash-card[data-cat="huyounwen"].active{background:#7C5CBF; border-color:#7C5CBF;}
   .dash-count{font-size:26px; font-weight:800; line-height:1;}
   .dash-label{font-size:13px; font-weight:700; margin-top:5px;}
   .dash-sub{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
@@ -56,11 +59,13 @@
   .section-head{display:flex; align-items:baseline; justify-content:space-between; padding-bottom:10px; margin-bottom:4px; border-bottom:2px solid var(--ink);}
   .section[data-cat="garment"] .section-head{border-bottom-color:#C98A1F;}
   .section[data-cat="app"] .section-head{border-bottom-color:#3D6FB4;}
+  .section[data-cat="huyounwen"] .section-head{border-bottom-color:#7C5CBF;}
   .section-head h2{font-size:17px; margin:0; font-weight:800;}
   .section-head span{font-size:12.5px; color:var(--ink-soft);}
   .resource-row{display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:12px; margin-bottom:8px;}
   .resource-row[data-cat="garment"]{background:#FBF1DE;}
   .resource-row[data-cat="app"]{background:#E9F1FA;}
+  .resource-row[data-cat="huyounwen"]{background:#F0EBFA;}
 
   /* 兩欄並排列表 */
   .resource-list{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
@@ -234,6 +239,7 @@
       <label>分類</label>
       <select id="catSelect">
         <option value="garment">紅光極智衣</option>
+        <option value="huyounwen">護您穩</option>
         <option value="app">APP</option>
       </select>
     </div>
@@ -306,7 +312,7 @@
 (function(){
   // 部署 Google Apps Script 後，把「網頁應用程式網址」（結尾是 /exec）貼在這裡；維持預設值時會自動進入示範模式（密碼 123456）
   const API_URL = "https://script.google.com/macros/s/AKfycbzzRm18x5TeyxV5OsWxU8cDxSeUrT0AQObjgk1jWRA3fXhupZQSwuhqpU_lpbhO77o6gQ/exec";
-  const CAT_LABEL = { app:'APP', garment:'紅光極智衣' };
+  const CAT_LABEL = { app:'APP', garment:'紅光極智衣', huyounwen:'護您穩' };
   const PDF_LIMIT = 20 * 1024 * 1024;
   const VIDEO_WARN = 50 * 1024 * 1024;
 
@@ -514,7 +520,7 @@
 
   function renderDashboard(){
     const dash = $('dashboard');
-    const defs = [{key:'all', label:'全部'}, {key:'garment', label:CAT_LABEL.garment}, {key:'app', label:CAT_LABEL.app}];
+    const defs = [{key:'all', label:'全部'}, {key:'garment', label:CAT_LABEL.garment}, {key:'app', label:CAT_LABEL.app}, {key:'huyounwen', label:CAT_LABEL.huyounwen}];
     dash.innerHTML = defs.map(d => {
       const c = countFor(d.key);
       const active = activeFilter === d.key ? ' active' : '';
@@ -529,7 +535,7 @@
   function render(){
     renderDashboard();
     main.innerHTML = '';
-    const cats = activeFilter === 'all' ? ['garment','app'] : [activeFilter];
+    const cats = activeFilter === 'all' ? ['garment','app','huyounwen'] : [activeFilter];
     let anyRendered = false;
     const pool = visibleResources();
 
