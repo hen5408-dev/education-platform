@@ -56,13 +56,14 @@
 
   main{max-width:1040px; margin:0 auto; padding:8px 24px 80px;}
   .section{margin-bottom:36px;}
+  .section + .section{border-top:1px dashed var(--line); padding-top:28px;}
   .section-head{display:flex; align-items:baseline; justify-content:space-between; padding-bottom:10px; margin-bottom:4px; border-bottom:2px solid var(--ink);}
   .section[data-cat="garment"] .section-head{border-bottom-color:#C98A1F;}
   .section[data-cat="app"] .section-head{border-bottom-color:#3D6FB4;}
   .section[data-cat="huyounwen"] .section-head{border-bottom-color:#7C5CBF;}
   .section-head h2{font-size:17px; margin:0; font-weight:800;}
   .section-head span{font-size:12.5px; color:var(--ink-soft);}
-  .resource-row{display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:12px; margin-bottom:8px;}
+  .resource-row{display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:12px; margin-bottom:8px; border:1px solid rgba(0,0,0,0.14);}
   .resource-row[data-cat="garment"]{background:#FBF1DE;}
   .resource-row[data-cat="app"]{background:#E9F1FA;}
   .resource-row[data-cat="huyounwen"]{background:#F0EBFA;}
