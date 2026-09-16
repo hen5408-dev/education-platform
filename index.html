@@ -85,6 +85,7 @@
   .res-cover-play{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.18); pointer-events:none;}
   .res-cover-play svg{width:16px; height:16px; color:var(--ink);}
   .res-cover-badge{position:absolute; top:10px; right:10px;}
+  .res-ribbon{position:absolute; top:12px; left:-32px; width:130px; text-align:center; transform:rotate(-45deg); background:#E0453C; color:#fff; font-size:12px; font-weight:800; padding:4px 0; box-shadow:0 2px 6px rgba(0,0,0,0.25); letter-spacing:1px; z-index:2;}
   .res-card-content{padding:12px 14px 14px;}
   .res-card-content .res-title{font-size:14px;}
   .res-card-content .res-actions{margin-top:10px; justify-content:flex-start; width:100%;}
@@ -560,7 +561,7 @@
       section.innerHTML = `<div class="section-head"><h2>${CAT_LABEL[cat]}</h2><span>${items.length} 份</span></div>`;
       const list = document.createElement('div');
       list.className = 'resource-list';
-      items.sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+      items.sort((a,b)=> (b.important?1:0) - (a.important?1:0) || (b.createdAt||'').localeCompare(a.createdAt||''));
       items.forEach(r => list.appendChild(renderRow(r)));
       section.appendChild(list);
       main.appendChild(section);
@@ -609,6 +610,7 @@
       row.innerHTML = `
         <div class="res-cover-wrap" data-preview="${r.id}">
           <img class="res-cover-img" src="${r.coverUrl}" alt="">
+          ${isImportant ? '<span class="res-ribbon">必看</span>' : ''}
           ${isVideo ? `<span class="res-cover-play">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           </span>` : ''}
