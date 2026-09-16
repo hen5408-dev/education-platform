@@ -66,6 +66,8 @@
   .resource-row[data-cat="garment"]{background:#FBF1DE;}
   .resource-row[data-cat="app"]{background:#E9F1FA;}
   .resource-row[data-cat="huyounwen"]{background:#F0EBFA;}
+  .resource-row.is-important{box-shadow:0 0 0 2px #E0453C inset;}
+  .badge-important{display:inline-block; color:#E0453C; font-weight:800; margin-right:2px;}
 
   /* 兩欄並排列表 */
   .resource-list{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
@@ -251,6 +253,13 @@
       </div>
     </div>
     <div class="field">
+      <label>重要程度</label>
+      <div class="type-toggle" id="importantToggle">
+        <button type="button" class="active" data-important="0">普通</button>
+        <button type="button" data-important="1">重要</button>
+      </div>
+    </div>
+    <div class="field">
       <label>標題</label>
       <input type="text" id="titleInput" placeholder="例：APP 藍芽配對教學">
     </div>
@@ -342,6 +351,7 @@
   let currentType = 'pdf';
   let sourceMode = 'file';
   let audienceMode = 'customer';
+  let importantMode = false;
   let editingId = null;
 
   const $ = (id) => document.getElementById(id);
@@ -568,9 +578,11 @@
     const row = document.createElement('div');
     const isVideo = r.type === 'video';
     const hasCover = !!r.coverUrl;
-    row.className = 'resource-row' + (hasCover ? ' has-cover' : '');
+    const isImportant = !!r.important;
+    row.className = 'resource-row' + (hasCover ? ' has-cover' : '') + (isImportant ? ' is-important' : '');
     row.dataset.cat = r.cat;
 
+    const titleHtml = `${isImportant ? '<span class="badge-important">【必看】</span>' : ''}${escapeHtml(r.title)}`;
     const metaHtml = `
       <span>${fmtDate(r.createdAt)}</span>
       ${r.size ? `<span>· ${fmtSize(r.size)}</span>` : ''}
@@ -603,7 +615,7 @@
           ${r.audience === 'staff' ? '<span class="tag-staff res-cover-badge">同仁限定</span>' : ''}
         </div>
         <div class="res-card-content">
-          <p class="res-title">${escapeHtml(r.title)}</p>
+          <p class="res-title">${titleHtml}</p>
           <div class="res-meta">${metaHtml}</div>
           ${r.desc ? `<div class="res-desc">${escapeHtml(r.desc)}</div>` : ''}
           <div class="res-actions">${actionsHtml}</div>
@@ -613,7 +625,7 @@
       row.innerHTML = `
         <div class="res-icon" id="thumb-${r.id}" data-preview="${r.id}">${iconSvg(isVideo?'video':'pdf')}</div>
         <div class="res-body">
-          <p class="res-title">${escapeHtml(r.title)}</p>
+          <p class="res-title">${titleHtml}</p>
           <div class="res-meta">${metaHtml}</div>
           ${r.desc ? `<div class="res-desc">${escapeHtml(r.desc)}</div>` : ''}
         </div>
@@ -750,6 +762,8 @@
     document.querySelectorAll('#sourceToggle button').forEach(b => b.classList.toggle('active', b.dataset.source === sourceMode));
     audienceMode = r.audience === 'staff' ? 'staff' : 'customer';
     document.querySelectorAll('#audienceToggle button').forEach(b => b.classList.toggle('active', b.dataset.audience === audienceMode));
+    importantMode = !!r.important;
+    document.querySelectorAll('#importantToggle button').forEach(b => b.classList.toggle('active', (b.dataset.important === '1') === importantMode));
     updateTypeUI();
     updateSourceUI();
     if(r.isLink) $('linkInput').value = r.fileUrl;
@@ -784,6 +798,14 @@
       document.querySelectorAll('#audienceToggle button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       audienceMode = btn.dataset.audience;
+    });
+  });
+
+  document.querySelectorAll('#importantToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#importantToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      importantMode = btn.dataset.important === '1';
     });
   });
 
@@ -885,7 +907,9 @@
     document.querySelector('#sourceToggle button[data-source="file"]').classList.add('active');
     document.querySelectorAll('#audienceToggle button').forEach(b=>b.classList.remove('active'));
     document.querySelector('#audienceToggle button[data-audience="customer"]').classList.add('active');
-    currentType = 'pdf'; sourceMode = 'file'; audienceMode = 'customer'; $('catSelect').value = 'garment';
+    document.querySelectorAll('#importantToggle button').forEach(b=>b.classList.remove('active'));
+    document.querySelector('#importantToggle button[data-important="0"]').classList.add('active');
+    currentType = 'pdf'; sourceMode = 'file'; audienceMode = 'customer'; importantMode = false; $('catSelect').value = 'garment';
     updateTypeUI();
     updateSourceUI();
   }
@@ -900,7 +924,7 @@
     if(sourceMode === 'file' && !pendingFile && !editingId){ showFormMsg('請選擇要上傳的檔案。', true); return; }
     if(sourceMode === 'link' && !link){ showFormMsg('請貼上網址。', true); return; }
 
-    const payload = { password, cat, type: currentType, title, desc, audience: audienceMode };
+    const payload = { password, cat, type: currentType, title, desc, audience: audienceMode, important: importantMode };
     if(sourceMode === 'file' && pendingFile){
       payload.fileName = pendingFile.name;
       payload.mimeType = pendingFile.mimeType;
@@ -922,7 +946,7 @@
         if(editingId){
           const r = resources.find(x => x.id === editingId);
           if(r){
-            r.title = title; r.desc = desc; r.cat = cat; r.audience = audienceMode;
+            r.title = title; r.desc = desc; r.cat = cat; r.audience = audienceMode; r.important = importantMode;
             if(payload.fileBase64){
               const url = 'data:' + payload.mimeType + ';base64,' + payload.fileBase64;
               r.isLink = false; r.fileUrl = url; r.viewUrl = url; r.size = Math.round(payload.fileBase64.length * 0.75);
@@ -936,7 +960,7 @@
           const isLink = !payload.fileBase64;
           const url = isLink ? payload.link : ('data:' + payload.mimeType + ';base64,' + payload.fileBase64);
           resources.push({
-            id, cat, type: currentType, title, desc, audience: audienceMode,
+            id, cat, type: currentType, title, desc, audience: audienceMode, important: importantMode,
             createdAt: new Date().toISOString(),
             isLink, fileUrl: url, viewUrl: url,
             size: isLink ? null : Math.round(payload.fileBase64.length * 0.75),
