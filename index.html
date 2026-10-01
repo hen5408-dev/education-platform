@@ -283,9 +283,14 @@
       <div class="hint" id="fileHint">檔案會上傳到雲端硬碟，建議 20MB 以內。</div>
     </div>
     <div class="field" id="linkField">
-      <label id="linkLabel">外部連結</label>
+      <label id="linkLabel">外部連結（預覽／觀看用）</label>
       <input type="text" id="linkInput" placeholder="貼上雲端硬碟 / YouTube 連結">
       <div class="hint" id="linkHint">影片檔案較大時，建議用這個方式，不受上傳大小限制。</div>
+    </div>
+    <div class="field" id="downloadLinkField">
+      <label>下載連結（選填）</label>
+      <input type="text" id="downloadLinkInput" placeholder="若要讓「下載」按鈕改抓雲端硬碟檔案，貼在這裡（否則下載會使用上面的外部連結）">
+      <div class="hint">例如：上面貼 YouTube 連結做預覽，這裡貼 Google 雲端硬碟連結做下載，兩者可以不同。</div>
     </div>
     <div class="form-msg" id="formMsg"></div>
   </div>
@@ -746,7 +751,8 @@
     document.querySelectorAll('#importantToggle button').forEach(b => b.classList.toggle('active', (b.dataset.important === '1') === importantMode));
     updateTypeUI();
     updateSourceUI();
-    if(r.isLink) $('linkInput').value = r.fileUrl;
+    if(r.isLink) $('linkInput').value = r.viewUrl || r.fileUrl;
+    $('downloadLinkInput').value = (r.isLink && r.fileUrl && r.viewUrl && r.fileUrl !== r.viewUrl) ? r.fileUrl : '';
     if(r.coverUrl){
       $('coverPreview').src = r.coverUrl;
       $('coverPreview').style.display = 'block';
@@ -792,6 +798,7 @@
   function updateSourceUI(){
     $('fileField').classList.toggle('hidden', sourceMode !== 'file');
     $('linkField').classList.toggle('hidden', sourceMode !== 'link');
+    $('downloadLinkField').classList.toggle('hidden', sourceMode !== 'link');
     if(sourceMode === 'link'){
       pendingFile = null;
       $('fileInput').value = '';
@@ -874,7 +881,7 @@
   }
 
   function resetForm(){
-    $('titleInput').value = ''; $('descInput').value = ''; $('linkInput').value = '';
+    $('titleInput').value = ''; $('descInput').value = ''; $('linkInput').value = ''; $('downloadLinkInput').value = '';
     $('fileInput').value = ''; pendingFile = null; editingId = null;
     $('fileDrop').classList.remove('has-file'); $('fileDropText').textContent = '點一下選擇檔案';
     $('coverInput').value = ''; pendingCover = null;
@@ -898,6 +905,7 @@
     const title = $('titleInput').value.trim();
     const desc = $('descInput').value.trim();
     const link = $('linkInput').value.trim();
+    const downloadLink = $('downloadLinkInput').value.trim();
     const cat = $('catSelect').value;
 
     if(!title){ showFormMsg('請輸入標題。', true); return; }
@@ -911,6 +919,7 @@
       payload.fileBase64 = pendingFile.base64;
     } else if(sourceMode === 'link' && link){
       payload.link = link;
+      if(downloadLink) payload.downloadLink = downloadLink;
     }
     if(pendingCover){
       payload.coverFileName = pendingCover.name;
@@ -931,18 +940,19 @@
               const url = 'data:' + payload.mimeType + ';base64,' + payload.fileBase64;
               r.isLink = false; r.fileUrl = url; r.viewUrl = url; r.size = Math.round(payload.fileBase64.length * 0.75);
             } else if(payload.link){
-              r.isLink = true; r.fileUrl = payload.link; r.viewUrl = payload.link; r.size = null;
+              r.isLink = true; r.fileUrl = payload.downloadLink || payload.link; r.viewUrl = payload.link; r.size = null;
             }
             if(pendingCover) r.coverUrl = pendingCover.dataUrl;
           }
         } else {
           const id = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
           const isLink = !payload.fileBase64;
-          const url = isLink ? payload.link : ('data:' + payload.mimeType + ';base64,' + payload.fileBase64);
+          const viewUrlVal = isLink ? payload.link : ('data:' + payload.mimeType + ';base64,' + payload.fileBase64);
+          const fileUrlVal = isLink ? (payload.downloadLink || payload.link) : viewUrlVal;
           resources.push({
             id, cat, type: currentType, title, desc, audience: audienceMode, important: importantMode,
             createdAt: new Date().toISOString(),
-            isLink, fileUrl: url, viewUrl: url,
+            isLink, fileUrl: fileUrlVal, viewUrl: viewUrlVal,
             size: isLink ? null : Math.round(payload.fileBase64.length * 0.75),
             coverUrl: pendingCover ? pendingCover.dataUrl : null,
             views: 0
